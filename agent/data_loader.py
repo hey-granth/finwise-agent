@@ -220,20 +220,20 @@ def get_news() -> list[NewsItem]:
 
 def get_news_for_portfolio(portfolio: Portfolio) -> list[NewsItem]:
     """Return only news items whose entities overlap with the portfolio's holdings."""
-    # Gather sectors from holdings via stock data lookup
-    holding_sectors: set[str] = set()
-    holding_symbols: set[str] = set()
+    portfolio_sectors: set[str] = set()
+    portfolio_symbols: set[str] = set()
+
     for h in portfolio.holdings:
-        holding_symbols.add(h.symbol)
-        stock = _stocks.get(h.symbol)
-        if stock:
-            holding_sectors.add(stock.sector)
+        portfolio_symbols.add(h.symbol)
+        stock = get_stock_data(h.symbol)
+        if stock is not None:
+            portfolio_sectors.add(stock.sector)
 
     # Also add MF-specific sectors if available (skip — MFs are diversified)
     relevant: list[NewsItem] = []
     for item in _news:
-        overlaps_sector = bool(holding_sectors & set(item.entities.sectors))
-        overlaps_stock = bool(holding_symbols & set(item.entities.stocks))
+        overlaps_sector = bool(portfolio_sectors & set(item.entities.sectors))
+        overlaps_stock = bool(portfolio_symbols & set(item.entities.stocks))
         if overlaps_sector or overlaps_stock:
             relevant.append(item)
 

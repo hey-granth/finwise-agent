@@ -84,10 +84,13 @@ def _compute_sector_allocation(portfolio: Portfolio) -> dict[str, float]:
 
 def _detect_concentration_risk(sector_allocation: dict[str, float]) -> ConcentrationRisk:
     """Classify concentration risk based on highest single-sector exposure."""
-    if not sector_allocation:
+    ASSET_CLASS_BUCKETS = {"MUTUAL_FUNDS", "DEBT_FUNDS", "HYBRID_FUNDS", "LIQUID_FUNDS"}
+    filtered = {k: v for k, v in sector_allocation.items() if k not in ASSET_CLASS_BUCKETS}
+
+    if not filtered:
         return ConcentrationRisk(level="NONE", breached_sectors=[], max_sector_exposure=0.0)
 
-    max_exposure = max(sector_allocation.values())
+    max_exposure = max(filtered.values())
 
     if max_exposure > 70:
         level: str = "CRITICAL"
@@ -100,7 +103,7 @@ def _detect_concentration_risk(sector_allocation: dict[str, float]) -> Concentra
     else:
         level = "NONE"
 
-    breached = [s for s, v in sector_allocation.items() if v > 25]
+    breached = [s for s, v in filtered.items() if v > 25]
 
     return ConcentrationRisk(
         level=level,  # type: ignore[arg-type]
