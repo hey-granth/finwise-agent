@@ -14,7 +14,7 @@ from agent.evaluator import evaluate_reasoning
 from agent.models import AgentResponse, MarketContext, PortfolioAnalytics
 from agent.portfolio_analytics import compute_analytics
 from agent.reasoning_engine import generate_briefing
-from agent.tracer import create_trace
+from agent.tracer import create_trace, flush
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +87,12 @@ async def analyze_portfolio(portfolio_id: str) -> AgentResponse:
         raise HTTPException(status_code=500, detail=f"Reasoning engine error: {exc}") from exc
 
     # 8. Return full response
-    return AgentResponse(
+    response = AgentResponse(
         market_context=market,
         portfolio_analytics=analytics,
         reasoning=reasoning,
         evaluation=evaluation,
         trace_id=str(trace.id),
     )
+    flush()
+    return response

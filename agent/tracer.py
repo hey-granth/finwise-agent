@@ -65,3 +65,11 @@ def log_generation(
         )
     except Exception:
         logger.exception("Failed to log generation '%s' to Langfuse", name)
+
+
+def flush() -> None:
+    """Flush all pending Langfuse events to the server."""
+    try:
+        get_langfuse_client().flush()
+    except Exception:
+        logger.exception("Langfuse flush failed")

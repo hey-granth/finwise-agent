@@ -20,14 +20,16 @@ def compute_analytics(portfolio: Portfolio, market_context: MarketContext) -> Po
     sector_allocation = _compute_sector_allocation(portfolio)
     concentration_risk = _detect_concentration_risk(sector_allocation)
     asset_mix = _compute_asset_mix(portfolio)
-    day_pnl_abs, invested_value = _compute_day_pnl(portfolio)
+    day_pnl_abs, day_pnl_pct = _compute_day_pnl(portfolio)
 
     # Total current value
     stock_value = sum(h.current_price * h.quantity for h in portfolio.holdings)
     mf_value = sum(mf.current_nav * mf.units for mf in portfolio.mutual_fund_holdings)
     total_value = stock_value + mf_value
 
-    day_pnl_pct = (day_pnl_abs / invested_value * 100) if invested_value > 0 else 0.0
+    stock_invested = sum(h.avg_buy_price * h.quantity for h in portfolio.holdings)
+    mf_invested = sum(mf.invested_nav * mf.units for mf in portfolio.mutual_fund_holdings)
+    invested_value = stock_invested + mf_invested
 
     # Validate weights sum to ~100%
     all_weights = [h.weight_in_portfolio for h in portfolio.holdings] + [
@@ -123,13 +125,19 @@ def _compute_asset_mix(portfolio: Portfolio) -> AssetMix:
 
 
 def _compute_day_pnl(portfolio: Portfolio) -> tuple[float, float]:
-    """Return (day_pnl_absolute, total_invested_value) across all holdings."""
-    stock_pnl = sum((h.current_price - h.avg_buy_price) * h.quantity for h in portfolio.holdings)
-    mf_pnl = sum(
-        (mf.current_nav - mf.invested_nav) * mf.units for mf in portfolio.mutual_fund_holdings
-    )
+    """Compute today's absolute and percentage P&L based on day_change_percent."""
+    day_pnl_absolute = 0.0
+    total_value = 0.0
 
-    stock_invested = sum(h.avg_buy_price * h.quantity for h in portfolio.holdings)
-    mf_invested = sum(mf.invested_nav * mf.units for mf in portfolio.mutual_fund_holdings)
+    for holding in portfolio.holdings:
+        position_value = holding.current_price * holding.quantity
+        day_pnl_absolute += position_value * (holding.day_change_percent / 100)
+        total_value += position_value
 
-    return (stock_pnl + mf_pnl, stock_invested + mf_invested)
+    for mf in portfolio.mutual_fund_holdings:
+        position_value = mf.current_nav * mf.units
+        day_pnl_absolute += position_value * (mf.day_change_percent / 100)
+        total_value += position_value
+
+    day_pnl_percent = (day_pnl_absolute / total_value * 100) if total_value > 0 else 0.0
+    return day_pnl_absolute, day_pnl_percent

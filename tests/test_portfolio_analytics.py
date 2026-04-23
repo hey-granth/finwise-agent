@@ -78,9 +78,9 @@ class TestComputeDayPnl:
             owner="Test User",
             holdings=[_make_stock_holding(qty=10, avg=100.0, current=120.0)],
         )
-        pnl, invested = _compute_day_pnl(portfolio)
-        assert pnl == pytest.approx(200.0)  # (120 - 100) * 10
-        assert invested == pytest.approx(1000.0)  # 100 * 10
+        pnl, pct = _compute_day_pnl(portfolio)
+        assert pnl == pytest.approx(18.0)  # 1200 * 1.5%
+        assert pct == pytest.approx(1.5)
 
     def test_mf_only_pnl(self) -> None:
         """P&L for MF holdings is (current_nav - invested_nav) * units."""
@@ -92,9 +92,9 @@ class TestComputeDayPnl:
                 _make_mf_holding(units=100.0, current_nav=200.0, invested_nav=180.0)
             ],
         )
-        pnl, invested = _compute_day_pnl(portfolio)
-        assert pnl == pytest.approx(2000.0)  # (200 - 180) * 100
-        assert invested == pytest.approx(18000.0)  # 180 * 100
+        pnl, pct = _compute_day_pnl(portfolio)
+        assert pnl == pytest.approx(-100.0)  # 20000 * -0.5%
+        assert pct == pytest.approx(-0.5)
 
     def test_combined_pnl(self) -> None:
         """Combined P&L sums stocks and MFs."""
@@ -107,16 +107,16 @@ class TestComputeDayPnl:
                 _make_mf_holding(units=50.0, current_nav=200.0, invested_nav=190.0)
             ],
         )
-        pnl, invested = _compute_day_pnl(portfolio)
-        assert pnl == pytest.approx(100.0 + 500.0)  # 10*10 + 10*50
-        assert invested == pytest.approx(1000.0 + 9500.0)
+        pnl, pct = _compute_day_pnl(portfolio)
+        assert pnl == pytest.approx(16.5 - 50.0)  # 1100*1.5% + 10000*-0.5%
+        assert pct == pytest.approx(-33.5 / 11100.0 * 100)
 
     def test_empty_portfolio_pnl(self) -> None:
         """Empty portfolio returns zero P&L and zero invested."""
         portfolio = Portfolio(id="PORTFOLIO_001", name="Test", owner="Test User")
-        pnl, invested = _compute_day_pnl(portfolio)
+        pnl, pct = _compute_day_pnl(portfolio)
         assert pnl == 0.0
-        assert invested == 0.0
+        assert pct == 0.0
 
 
 # --- Asset mix tests ---
